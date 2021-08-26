@@ -1,0 +1,158 @@
+1.首先安装docker环境
+yum -y install docker
+之后启动docker服务
+service docker start
+2.安装python36环境
+yum -y install python36*
+3.创建一个python虚拟环境
+python -m venv esvenv
+4.切换到新建的虚拟环境，创建docker-compose
+python -m pip install --upgrade pip
+pip install docker-compose
+5.进入python虚拟环境,创建一个文件夹，创建docker-compose.yml文件,文件内容在另一个文件
+
+这里有个需要注意的点，按照业务需求需要增加一个ingest节点，用于数据的enrich功能
+在一个节点的环境变量上加一个配置
+- node.ingest：true
+其他的节点的配置
+- node.ingest：false
+
+
+
+*6 修改docker镜像源 /etc/docker/daemon.json
+如果下载速度很快就不用修改
+7.进入docker-compose.yml文件夹下 启动命令
+第一次启动使用 docker-compose up 会把错误信息打印的终端，方便定位错误,确定无误后使用命令 docker-compose up -d
+如果启动会报 “elasticsearch max virtual memory areas vm.max_map_count [65530] is too low, increase to at ......”
+切换到root 修改 sysctl.conf
+vi /etc/sysctl.conf
+vm.max_map_count=655360
+sysctl -p
+之后重启es
+
+8.验证es是否启动成功
+在终端执行 curl host:9200,如果出现如下所示，说明安装成功
+{
+  "name" : "es01",
+  "cluster_name" : "es-docker-cluster",
+  "cluster_uuid" : "s324zMLLTWu8oDsCK07_5g",
+  "version" : {
+    "number" : "7.8.1",
+    "build_flavor" : "default",
+    "build_type" : "docker",
+    "build_hash" : "b5ca9c58fb664ca8bf9e4057fc229b3396bf3a89",
+    "build_date" : "2020-07-21T16:40:44.668009Z",
+    "build_snapshot" : false,
+    "lucene_version" : "8.5.1",
+    "minimum_wire_compatibility_version" : "6.8.0",
+    "minimum_index_compatibility_version" : "6.0.0-beta1"
+  },
+  "tagline" : "You Know, for Search"
+}
+
+9.修改es的配置文件
+cd /var/lib/docker/volumes/es_data01/_data/config
+vim elasticsearch.yml
+增加内容
+
+cluster.name: "msp-cluster"
+network.host: 0.0.0.0
+http.cors.enabled: true
+http.cors.allow-origin: '*'
+http.cors.allow-headers: Authorization,X-Requested-With,Content-Length,Content-Type
+
+把此文件复制到其他几个节点上,之后重启es服务
+
+10.配置es集群之间的证书与es用户名密码访问
+
+选一个节点,进入es的环境
+docke ps
+docker exec -it xxxxx /bin/bash
+
+进入bin目录
+# 生成CA证书
+bin/elasticsearch-certutil ca （CA证书：elastic-stack-ca.p12）
+# 生成节点证书
+bin/elasticsearch-certutil cert --ca elastic-stack-ca.p12  (节点证书：elastic-certificates.p12)
+
+给证书赋权 和 节点 目录的权限要一样
+chown -R 1000:root elastic-certificates.p12
+
+把这个证书复制到其他几个节点下面
+
+继续修改elasticsearch.yml文件
+
+在后面增加
+xpack.security.enabled: true
+xpack.security.transport.ssl.enabled: true
+xpack.security.transport.ssl.verification_mode: certificate # 证书认证级别
+xpack.security.transport.ssl.keystore.path: elastic-certificates.p12
+xpack.security.transport.ssl.truststore.path: elastic-certificates.p12
+
+把此配置文件复制到其他几个节点下,完成后重启es
+
+设置密码
+
+bin/elasticsearch-setup-passwords interactive
+
+如果成功的话，让你设置各个用户的用户名与密码  输出结果
+
+Initiating the setup of passwords for reserved users elastic,apm_system,kibana,logstash_system,beats_system,remote_monitoring_user.
+You will be prompted to enter passwords as the process progresses.
+Please confirm that you would like to continue [y/N]y # 输入y
+
+Enter password for [elastic]:
+Reenter password for [elastic]:
+Enter password for [apm_system]:
+Reenter password for [apm_system]:
+Enter password for [kibana]:
+Reenter password for [kibana]:
+Enter password for [logstash_system]:
+Reenter password for [logstash_system]:
+Enter password for [beats_system]:
+Reenter password for [beats_system]:
+Enter password for [remote_monitoring_user]:
+Reenter password for [remote_monitoring_user]:
+Changed password for user [apm_system]
+Changed password for user [kibana]
+Changed password for user [logstash_system]
+Changed password for user [beats_system]
+Changed password for user [remote_monitoring_user]
+Changed password for user [elastic]
+
+
+在验证一下集群
+curl -X GET -uuserName:Password host:9200 如果成功的话 说明密码设置成功
+
+11.设置外部应用访问es集群的ssl
+
+合并咱们申请域名证书
+cat cert1.pem privkey1.pem > my_key.pem
+
+转.p12
+openssl pkcs12 -export -in my_key.pem -out es.p12
+
+把es.p12证书传到各个节点下，并在elasticsearch.yml文件下加上如下内容
+# 集群与外部间的安全通信
+xpack.security.http.ssl.enabled: true
+xpack.security.http.ssl.keystore.path: es.p12
+xpack.security.http.ssl.truststore.path: es.p12
+
+把elasticsearch.yml文件传到各个节点下，重启es服务
+
+之后验证一下 https是否生效
+curl -X GET -uuserName:Password https://host:9200
+
+
+
+
+
+
+
+
+
+
+
+
+
+

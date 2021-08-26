@@ -1,0 +1,107 @@
+version: '2.2'
+services:
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.8.1
+    container_name: es01
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es02,es03,es04
+      - cluster.initial_master_nodes=es01,es02,es03,es04
+      - bootstrap.memory_lock=true
+      - node.ingest：false
+      - "ES_JAVA_OPTS=-Xms2048m -Xmx2048m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: "65536"
+        hard: "65536"
+    volumes:
+      - data01:/usr/share/elasticsearch
+    ports:
+      - 9200:9200
+    networks:
+      - elastic
+  es02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.8.1
+    container_name: es02
+    environment:
+      - node.name=es02
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es01,es03,es04
+      - cluster.initial_master_nodes=es01,es02,es03,es04
+      - bootstrap.memory_lock=true
+      - node.ingest：false
+      - "ES_JAVA_OPTS=-Xms2048m -Xmx2048m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: "65536"
+        hard: "65536"
+    volumes:
+      - data02:/usr/share/elasticsearch
+    networks:
+      - elastic
+  es03:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.8.1
+    container_name: es03
+    environment:
+      - node.name=es03
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es01,es02,es04
+      - cluster.initial_master_nodes=es01,es02,es03,es04
+      - bootstrap.memory_lock=true
+      - node.ingest：false
+      - "ES_JAVA_OPTS=-Xms2048m -Xmx2048m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: "65536"
+        hard: "65536"
+    volumes:
+      - data03:/usr/share/elasticsearch
+    networks:
+      - elastic
+  es04:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.8.1
+    container_name: es04
+    environment:
+      - node.name=es04
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es01,es02,es03
+      - cluster.initial_master_nodes=es01,es02,es03,es04
+      - bootstrap.memory_lock=true
+      - node.ingest：true
+      - "ES_JAVA_OPTS=-Xms2048m -Xmx2048m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: "65536"
+        hard: "65536"
+    volumes:
+      - data04:/usr/share/elasticsearch
+    networks:
+      - elastic
+
+
+volumes:
+  data01:
+    driver: local
+  data02:
+    driver: local
+  data03:
+    driver: local
+  data04:
+    driver: local
+
+networks:
+  elastic:
+    driver: bridge

@@ -1,0 +1,18 @@
+#
+# ** THIS IS AN AUTO-GENERATED FILE **
+#
+
+# Default Kibana configuration for docker target
+server.name: kibana
+server.host: "0"
+elasticsearch.hosts: [ "https://es.test.upcloudx.cn:9200" ]
+#monitoring.ui.container.elasticsearch.enabled: true
+xpack.monitoring.ui.container.elasticsearch.enabled: true
+#
+i18n.locale: "zh-CN"
+elasticsearch.username: "elastic"
+elasticsearch.password: "hzV4WAQrmVxvv04Seq8K"
+
+#elasticsearch.ssl.certificateAuthorities: ["/usr/share/kibana/config/elastic-ca.pem"]
+elasticsearch.ssl.verificationMode: none  # 证书验证级别
+#elasticsearch.ssl.verificationMode: certificate # 证书验证级别

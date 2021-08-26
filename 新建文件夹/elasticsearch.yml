@@ -1,0 +1,19 @@
+cluster.name: "msp-cluster"
+network.host: 0.0.0.0
+http.cors.enabled: true
+http.cors.allow-origin: '*'
+http.cors.allow-headers: Authorization,X-Requested-With,Content-Length,Content-Type
+
+
+
+# 集群内部安全通信
+xpack.security.enabled: true
+xpack.security.transport.ssl.enabled: true
+xpack.security.transport.ssl.verification_mode: certificate # 证书认证级别
+xpack.security.transport.ssl.keystore.path: elastic-certificates.p12
+xpack.security.transport.ssl.truststore.path: elastic-certificates.p12
+
+# 集群与外部间的安全通信
+xpack.security.http.ssl.enabled: true
+xpack.security.http.ssl.keystore.path: es.p12
+xpack.security.http.ssl.truststore.path: es.p12
